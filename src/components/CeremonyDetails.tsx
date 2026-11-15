@@ -89,7 +89,7 @@ export const CeremonyDetails: React.FC = () => {
             {/* Main Creative Image Frame */}
             <div className="relative aspect-[3/4] sm:aspect-[4/5] rounded-[2rem] sm:rounded-[3rem] overflow-hidden border-[6px] sm:border-[8px] border-white shadow-[0_20px_50px_rgba(176,137,104,0.2)] bg-white group">
               <img
-                src="/7.jpeg"
+                src="/p.jpeg"
                 loading="lazy"
                 alt={`${WEDDING.brideName} and ${WEDDING.groomName}`}
                 className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-[1.03]"
