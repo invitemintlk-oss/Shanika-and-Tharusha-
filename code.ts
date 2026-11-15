@@ -71,39 +71,9 @@ function doPost(e) {
   }
 }
 
-/**
- * GET ?action=wishes  → latest wishes (newest first) for the guestbook on the website.
- * GET (no action)      → health check.
- */
-function doGet(e) {
-  try {
-    const action = String((e && e.parameter && e.parameter.action) || '').toLowerCase();
-    if (action !== 'wishes') {
-      return json_({ ok: true, message: 'Shanika & Tharusha wedding endpoint is running.' });
-    }
-
-    const limit = Math.min(Number(e.parameter.limit) || 100, 300);
-    const sheet = ensureSheet_(SpreadsheetApp.openById(SPREADSHEET_ID), SHEETS.WISHES);
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return json_({ ok: true, wishes: [] });
-
-    const count = Math.min(limit, lastRow - 1);
-    const rows = sheet.getRange(lastRow - count + 1, 1, count, 3).getValues();
-    const wishes = rows
-      .filter(function (r) { return r[1] && r[2]; })
-      .map(function (r) {
-        return {
-          timestamp: r[0] instanceof Date ? r[0].toISOString() : String(r[0]),
-          name: unescape_(String(r[1])),
-          message: unescape_(String(r[2])),
-        };
-      })
-      .reverse();
-
-    return json_({ ok: true, wishes: wishes });
-  } catch (err) {
-    return json_({ ok: false, error: String(err && err.message ? err.message : err) });
-  }
+/** Health check only — wishes and RSVPs are never exposed publicly. */
+function doGet() {
+  return json_({ ok: true, message: 'Shanika & Tharusha wedding endpoint is running.' });
 }
 
 /** Run once from the Apps Script editor to create both tabs right away (optional). */
@@ -173,9 +143,6 @@ function clean_(value, maxLen) {
   return s;
 }
 
-function unescape_(s) {
-  return s.charAt(0) === "'" ? s.slice(1) : s;
-}
 
 function json_(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);

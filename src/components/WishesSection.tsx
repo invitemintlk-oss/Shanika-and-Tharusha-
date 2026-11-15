@@ -1,52 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Loader2, Sparkles } from 'lucide-react';
-import { fetchWishes, submitWish } from '../sheetsApi';
-
-interface Wish {
-  id: string;
-  name: string;
-  message: string;
-  createdAt: Date;
-}
-
-const getRelativeTime = (date: Date) => {
-  const diff = Date.now() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
+import { Send, Loader2, Sparkles, CheckCircle } from 'lucide-react';
+import { submitWish } from '../sheetsApi';
 
 export const WishesSection: React.FC = () => {
-  const [wishes, setWishes] = useState<Wish[]>([]);
   const [formData, setFormData] = useState({ name: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
-
-  // Load existing wishes from the Google Sheet
-  useEffect(() => {
-    let cancelled = false;
-    fetchWishes()
-      .then((list) => {
-        if (cancelled) return;
-        setWishes((prev) => [
-          ...prev,
-          ...list.map((w, i) => ({
-            id: `remote-${i}-${w.timestamp}`,
-            name: w.name,
-            message: w.message,
-            createdAt: new Date(w.timestamp),
-          })),
-        ]);
-      })
-      .catch((err) => console.error('Could not load wishes:', err));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,18 +18,10 @@ export const WishesSection: React.FC = () => {
     setError('');
 
     try {
+      // Wishes are saved privately to the Google Sheet and not shown on the invitation.
       await submitWish({ name, message });
-
-      const newWish: Wish = {
-        id: Date.now().toString(),
-        name,
-        message,
-        createdAt: new Date(),
-      };
-      
-      // Prepend the new wish to the list
-      setWishes(prev => [newWish, ...prev]);
       setFormData({ name: '', message: '' });
+      setSent(true);
     } catch (err) {
       console.error('Error submitting wish: ', err);
       setError("Sorry, we couldn't send your blessing. Please try again.");
@@ -76,6 +29,7 @@ export const WishesSection: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto px-6 relative py-12">
@@ -101,12 +55,37 @@ export const WishesSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1, ease: 'easeOut' }}
-          className="w-full glass p-8 sm:p-14 rounded-[3rem] border border-white/60 shadow-[0_30px_60px_rgba(176,137,104,0.1)] relative overflow-hidden bg-white/70 backdrop-blur-3xl mb-16"
+          className="w-full glass p-8 sm:p-14 rounded-[3rem] border border-white/60 shadow-[0_30px_60px_rgba(176,137,104,0.1)] relative overflow-hidden bg-white/70 backdrop-blur-3xl"
         >
           {/* Subtle top reflection line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-beige to-transparent opacity-50" />
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <AnimatePresence mode="wait">
+          {sent ? (
+            <motion.div
+              key="thanks"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8"
+            >
+              <div className="w-20 h-20 bg-green-50/80 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-green-100">
+                <CheckCircle className="w-10 h-10 text-green-500" />
+              </div>
+              <h3 className="text-4xl font-display text-stone-800 mb-4 tracking-tight">Thank You</h3>
+              <p className="text-stone-500/90 font-serif italic text-lg leading-relaxed max-w-md mx-auto mb-8">
+                Your heartfelt blessing has been sent to us. We will treasure it always.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSent(false)}
+                className="px-6 py-2 rounded-full border border-brand-beige/30 text-brand-beige-deep font-sans text-[10px] tracking-[0.2em] uppercase hover:bg-brand-beige/10 transition-all duration-300 shadow-sm"
+              >
+                Send Another Blessing
+              </button>
+            </motion.div>
+          ) : (
+          <motion.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={handleSubmit} className="space-y-8">
             <div className="text-center mb-10">
               <p className="text-stone-500 font-serif italic text-lg leading-relaxed max-w-lg mx-auto">
                 Leave a little note or a piece of advice for our journey ahead.
@@ -158,34 +137,11 @@ export const WishesSection: React.FC = () => {
                 )}
               </button>
             </div>
-          </form>
+          </motion.form>
+          )}
+          </AnimatePresence>
         </motion.div>
 
-        {/* Wishes List - Stacked Centrally Below */}
-        <div className="w-full space-y-6 max-h-[800px] overflow-y-auto pr-4 scrollbar-thin">
-          <AnimatePresence initial={false}>
-            {wishes.map((wish) => (
-              <motion.div
-                key={wish.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="glass p-8 sm:p-10 rounded-3xl border border-brand-beige/20 shadow-sm relative overflow-hidden group bg-white/50 backdrop-blur-sm"
-              >
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-beige-deep/20 to-brand-beige/40 group-hover:from-brand-beige-deep group-hover:to-brand-beige transition-all duration-500" />
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4 mb-4">
-                  <h4 className="font-display text-2xl text-stone-800 tracking-tight pl-2">{wish.name}</h4>
-                  <span className="text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold bg-white/60 px-3 py-1 rounded-full border border-stone-100/50">
-                    {wish.createdAt && !isNaN(wish.createdAt.getTime()) ? getRelativeTime(wish.createdAt) : 'just now'}
-                  </span>
-                </div>
-                <p className="text-stone-600 font-serif italic text-lg sm:text-lg leading-relaxed pl-2">
-                  "{wish.message}"
-                </p>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
       </div>
     </div>
   );

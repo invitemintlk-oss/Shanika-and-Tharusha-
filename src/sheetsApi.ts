@@ -30,16 +30,3 @@ export function submitRSVP(data: { name: string; attendance: 'Yes' | 'No'; guest
 export function submitWish(data: { name: string; message: string }) {
   return post({ sheet: 'Wishes', ...data });
 }
-
-export interface RemoteWish {
-  timestamp: string;
-  name: string;
-  message: string;
-}
-
-export async function fetchWishes(): Promise<RemoteWish[]> {
-  if (!isSheetsConfigured()) return [];
-  const res = await fetch(`${SCRIPT_URL}?action=wishes&limit=100`);
-  const data = await res.json();
-  return data && data.ok && Array.isArray(data.wishes) ? data.wishes : [];
-}

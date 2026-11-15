@@ -19,7 +19,7 @@ Tabs created:
 - **RSVP**: Timestamp · Full Name · Attendance · Number of Guests · Dietary Notes · Invited As
 - **Wishes**: Timestamp · Name · Message · Invited As
 
-The guestbook on the website shows the latest 100 rows of **Wishes**. Delete a row in the sheet to hide a wish.
+Wishes are saved to the sheet only; they are not displayed on the invitation website.
 
 If you change `code.ts` later: **Deploy → Manage deployments → Edit → Version: New version → Deploy**
 (the URL stays the same).
