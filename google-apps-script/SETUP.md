@@ -1,17 +1,25 @@
-1. Open your Google Sheet and create two tabs named RSVP and WISH.
-2. Open Extensions > Apps Script.
-3. Replace script content with code from google-apps-script/code.gs.
-4. Click Deploy > New deployment.
-5. Select type: Web app.
-6. Execute as: Me.
-7. Who has access: Anyone.
-8. Deploy and copy the Web App URL.
-9. In your project root, create a file named .env with:
+# Google Sheets setup (RSVP + Wishes)
 
-VITE_GOOGLE_APPS_SCRIPT_URL=YOUR_WEB_APP_URL
+Spreadsheet: https://docs.google.com/spreadsheets/d/1Kx7j1x-US5zwirFbb6fodh_YEXAReWjyXhsg6o55xCg/edit
 
-10. Restart Vite dev server.
+1. Open the spreadsheet → **Extensions → Apps Script**.
+2. Delete any existing code and paste the full contents of `code.ts` (project root). Save.
+3. (Optional) Choose `setup` in the function dropdown and click **Run** to create the
+   `RSVP` and `Wishes` tabs now. Otherwise they are created automatically on the first submission.
+   Approve the permission prompt the first time.
+4. **Deploy → New deployment** → type **Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. Copy the Web App URL (`https://script.google.com/macros/s/.../exec`) and either:
+   - paste it into `DEFAULT_SCRIPT_URL` in `src/sheetsApi.ts`, **or**
+   - set `VITE_GOOGLE_APPS_SCRIPT_URL` in `.env` (local) and in Vercel → Settings → Environment Variables.
+6. Rebuild / redeploy the site.
 
-Notes:
-- If you update Apps Script code later, redeploy a new version.
-- The frontend sends RSVP to sheet RSVP and wishes to sheet WISH.
+Tabs created:
+- **RSVP**: Timestamp · Full Name · Attendance · Number of Guests · Dietary Notes · Invited As
+- **Wishes**: Timestamp · Name · Message · Invited As
+
+The guestbook on the website shows the latest 100 rows of **Wishes**. Delete a row in the sheet to hide a wish.
+
+If you change `code.ts` later: **Deploy → Manage deployments → Edit → Version: New version → Deploy**
+(the URL stays the same).

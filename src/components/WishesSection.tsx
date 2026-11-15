@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Loader2, Sparkles } from 'lucide-react';
+import { fetchWishes, submitWish } from '../sheetsApi';
 
 interface Wish {
   id: string;
@@ -23,38 +24,54 @@ export const WishesSection: React.FC = () => {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [formData, setFormData] = useState({ name: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Load existing wishes from the Google Sheet
+  useEffect(() => {
+    let cancelled = false;
+    fetchWishes()
+      .then((list) => {
+        if (cancelled) return;
+        setWishes((prev) => [
+          ...prev,
+          ...list.map((w, i) => ({
+            id: `remote-${i}-${w.timestamp}`,
+            name: w.name,
+            message: w.message,
+            createdAt: new Date(w.timestamp),
+          })),
+        ]);
+      })
+      .catch((err) => console.error('Could not load wishes:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.message) return;
+    const name = formData.name.trim();
+    const message = formData.message.trim();
+    if (!name || !message) return;
     setIsSubmitting(true);
+    setError('');
 
     try {
-      // Send data to Google Sheets
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyay20jbF63BRUj8JGGbUbYkYS3Us-DpLZc2Hs34si_qKJgxs_81xpNBniXsBNFsYOt7g/exec';
-      const payload = new FormData();
-      payload.append('sheet', 'Wishes');
-      payload.append('name', formData.name);
-      payload.append('message', formData.message);
-
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: payload,
-      });
+      await submitWish({ name, message });
 
       const newWish: Wish = {
         id: Date.now().toString(),
-        name: formData.name,
-        message: formData.message,
+        name,
+        message,
         createdAt: new Date(),
       };
       
       // Prepend the new wish to the list
       setWishes(prev => [newWish, ...prev]);
       setFormData({ name: '', message: '' });
-    } catch (error) {
-      console.error('Error submitting wish: ', error);
+    } catch (err) {
+      console.error('Error submitting wish: ', err);
+      setError("Sorry, we couldn't send your blessing. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -121,6 +138,10 @@ export const WishesSection: React.FC = () => {
               </div>
             </div>
 
+            {error && (
+              <p className="text-center text-sm text-red-600 font-sans" role="alert">{error}</p>
+            )}
+
             <div className="pt-4 max-w-sm mx-auto">
               <button
                 disabled={isSubmitting}
@@ -155,7 +176,7 @@ export const WishesSection: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4 mb-4">
                   <h4 className="font-display text-2xl text-stone-800 tracking-tight pl-2">{wish.name}</h4>
                   <span className="text-[9px] uppercase tracking-[0.2em] text-stone-400 font-bold bg-white/60 px-3 py-1 rounded-full border border-stone-100/50">
-                    {wish.createdAt ? getRelativeTime(wish.createdAt) : 'just now'}
+                    {wish.createdAt && !isNaN(wish.createdAt.getTime()) ? getRelativeTime(wish.createdAt) : 'just now'}
                   </span>
                 </div>
                 <p className="text-stone-600 font-serif italic text-lg sm:text-lg leading-relaxed pl-2">
